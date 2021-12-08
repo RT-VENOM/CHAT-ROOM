@@ -31,7 +31,10 @@ async def recieve(websocket):
     while True:
         try:
             data= await websocket.recv()
-            await all(data)
+            if data == "list()":
+                await websocket.send(", ".join(nicknames))
+            else:
+                await all(data)
         except:
             index = clients.index(websocket)
             clients.remove(websocket)
