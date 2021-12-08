@@ -1,51 +1,53 @@
-import socket
+import asyncio
 import threading
-
-
-
-host = '0.0.0.0'
-port = 55555
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((host, port))
-server.listen()
-
+import websockets
+from websockets.server import ServerConnection
 clients = []
 nicknames = []
+casting = []
+casting_nick = []
+connection = ServerConnection()
 
-def broadcast(message):
-    for client in clients:
-        client.send(message)
 
-def handle(client):
+
+
+async def recieve(websocket):
+
+        
+    async def all(message):
+        for client in clients:
+            await client.send(message)
+    ip = websocket.remote_address[0]
+    print(f'Connected with {str(ip)}')
+    await websocket.send("NICK")
+    name = await websocket.recv()
+    nicknames.append(name)
+    clients.append(websocket)
+    print(f'Nickname of the client is {name}')
+    await websocket.send('Connected to the server!')
+    await all(f'{name} joined the chat!')
     while True:
         try:
-            message=client.recv(1024)
-            broadcast(message)
+            data= await websocket.recv()
+            await all(data)
         except:
-            index = clients.index(client)
-            clients.remove(client)
-            nickname = nicknames[index]
-            broadcast(f'{nickname} left the chat!'.encode('ascii'))
-            nicknames.remove(nickname)
+            index = clients.index(websocket)
+            clients.remove(websocket)
+            nick = nicknames[index]
+            await all(f"{nick} left the chat!")
+            nicknames.remove(nick)
             break
+        
 
 
-def recieve():
-    while True:
-        client, address = server.accept()
-        print(f"Connected with {str(address)}")
-
-        client.send("NICK".encode('ascii'))
-        nickname = client.recv(1024).decode('ascii')
-        nicknames.append(nickname)
-        clients.append(client)
-        print(f"Nickname of the client is {nickname}!")
-        broadcast(f'{nickname} joined the chat!'.encode('ascii'))
-        client.send('Connected to the server!'.encode('ascii'))
-        thread = threading.Thread(target=handle, args=(client,))
-        thread.start()
 
 
-print('Server is listening...')
-recieve()
+
+
+async def main():
+    async with websockets.serve(recieve, "0.0.0.0", 8765):
+        print("Server is listening!")
+        await asyncio.Future()  # run forever
+
+
+asyncio.run(main())
