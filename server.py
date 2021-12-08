@@ -1,6 +1,8 @@
 import asyncio
 import threading
 import websockets
+import os 
+
 from websockets.server import ServerConnection
 clients = []
 nicknames = []
@@ -45,7 +47,7 @@ async def recieve(websocket):
 
 
 async def main():
-    async with websockets.serve(recieve, "0.0.0.0", 8765):
+    async with websockets.serve(recieve, "0.0.0.0", os.getenv('PORT')):
         print("Server is listening!")
         await asyncio.Future()  # run forever
 
